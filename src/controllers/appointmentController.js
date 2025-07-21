@@ -48,20 +48,87 @@ exports.createAppointment = async (req, res) => {
   }
 };
 
+// exports.getAppointments = async (req, res) => {
+//   try {
+//     const {
+//       search,
+//       status,
+//       startDate,
+//       endDate,
+//       therapist,
+//       page = 1,
+//       limit = 10,
+//     } = req.query;
+
+//     const query = {};
+
+//     if (search) {
+//       const patients = await Patient.find({
+//         $or: [
+//           { firstName: { $regex: search, $options: "i" } },
+//           { lastName: { $regex: search, $options: "i" } },
+//           { patientId: { $regex: search, $options: "i" } },
+//         ],
+//       });
+
+//       const patientIds = patients.map((p) => p._id);
+//       query.patient = { $in: patientIds };
+//     }
+
+//     if (status) {
+//       query.status = status;
+//     }
+
+//     if (therapist) {
+//       query.therapist = therapist;
+//     }
+
+//     if (startDate || endDate) {
+//       query.dateTime = {};
+//       if (startDate) query.dateTime.$gte = new Date(startDate);
+//       if (endDate) query.dateTime.$lte = new Date(endDate);
+//     }
+
+//     const appointments = await Appointment.find(query)
+//       .populate("patient", "firstName lastName patientId")
+//       .populate("therapist", "name email")
+//       .skip((page - 1) * limit)
+//       .limit(limit)
+//       .sort({ dateTime: 1 });
+
+//     const total = await Appointment.countDocuments(query);
+
+//     res.json({
+//       success: true,
+//       data: appointments,
+//       pagination: {
+//         total,
+//         page: parseInt(page),
+//         pages: Math.ceil(total / limit),
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 exports.getAppointments = async (req, res) => {
   try {
     const {
       search,
       status,
-      startDate,
-      endDate,
       therapist,
+      date, // New query param: format should be YYYY-MM-DD
       page = 1,
       limit = 10,
     } = req.query;
 
     const query = {};
 
+    // Handle search for patients
     if (search) {
       const patients = await Patient.find({
         $or: [
@@ -75,19 +142,27 @@ exports.getAppointments = async (req, res) => {
       query.patient = { $in: patientIds };
     }
 
+    // Filter by appointment status
     if (status) {
       query.status = status;
     }
 
+    // Filter by therapist
     if (therapist) {
       query.therapist = therapist;
     }
 
-    if (startDate || endDate) {
-      query.dateTime = {};
-      if (startDate) query.dateTime.$gte = new Date(startDate);
-      if (endDate) query.dateTime.$lte = new Date(endDate);
-    }
+    // Default to today's date if no `date` is provided
+    const targetDate = date ? new Date(date) : new Date();
+
+    // Start and end of the day
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    query.dateTime = { $gte: startOfDay, $lte: endOfDay };
 
     const appointments = await Appointment.find(query)
       .populate("patient", "firstName lastName patientId")
