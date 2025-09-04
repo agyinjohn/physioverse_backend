@@ -40,6 +40,7 @@ const sendResetPasswordEmail = async (email, name, resetToken) => {
       <h1>Password Reset Request</h1>
       <p>Hello ${name},</p>
       <p>You requested to reset your password. Click the link below to reset it:</p>
+      <p>Verification code: ${resetToken} </p>
       <p><a href="${resetUrl}">Reset Password</a></p>
       <p>This link will expire in 1 hour.</p>
       <p>If you didn't request this, please ignore this email.</p>
