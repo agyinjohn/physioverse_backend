@@ -95,6 +95,7 @@ exports.login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        requirePasswordChange: user.requirePasswordChange,
       },
     });
   } catch (error) {
@@ -267,6 +268,36 @@ exports.getAllUsers = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching users",
+      error: error.message,
+    });
+  }
+};
+
+exports.updateInitialPassword = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    const user = await User.findById(req.user.id);
+
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: "Current password is incorrect",
+      });
+    }
+
+    user.password = newPassword;
+    user.requirePasswordChange = false;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error updating password",
       error: error.message,
     });
   }

@@ -9,6 +9,11 @@ router.post("/login", authController.login);
 router.post("/forgot-password", authController.forgotPassword);
 router.post("/reset-password", authController.resetPassword);
 router.post("/verify-otp", authController.verifyOTP);
+router.post(
+  "/update-initial-password",
+  authMiddleware,
+  authController.updateInitialPassword
+);
 // Protected route example
 router.get("/profile", authMiddleware, (req, res) => {
   res.json({ user: req.user });

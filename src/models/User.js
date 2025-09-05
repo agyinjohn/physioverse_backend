@@ -39,6 +39,10 @@ const userSchema = new mongoose.Schema(
       code: String,
       expiresAt: Date,
     },
+    requirePasswordChange: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
