@@ -37,7 +37,7 @@ const sendResetPasswordEmail = async (email, name, otp) => {
     html: `
       <h1>Password Reset Request</h1>
       <p>Hello ${name},</p>
-      <p>You requested to reset your password. Here is your OTP code:${otp}</p>
+      <p>You requested to reset your password. Here is your OTP code:</p>
       <h2 style="font-size: 24px; letter-spacing: 2px; background: #f5f5f5; padding: 10px; text-align: center;">${otp}</h2>
       <p>This code will expire in 15 minutes.</p>
       <p>If you didn't request this, please ignore this email.</p>
