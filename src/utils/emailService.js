@@ -29,9 +29,7 @@ const sendWelcomeEmail = async (email, name, password) => {
   return transporter.sendMail(mailOptions);
 };
 
-const sendResetPasswordEmail = async (email, name, resetToken) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${resetToken}`;
-
+const sendResetPasswordEmail = async (email, name, otp) => {
   const mailOptions = {
     from: process.env.SMTP_FROM,
     to: email,
@@ -39,10 +37,9 @@ const sendResetPasswordEmail = async (email, name, resetToken) => {
     html: `
       <h1>Password Reset Request</h1>
       <p>Hello ${name},</p>
-      <p>You requested to reset your password. Click the link below to reset it:</p>
-      <p>Verification code: ${resetToken} </p>
-      <p><a href="${resetUrl}">Reset Password</a></p>
-      <p>This link will expire in 1 hour.</p>
+      <p>You requested to reset your password. Here is your OTP code:${otp}</p>
+      <h2 style="font-size: 24px; letter-spacing: 2px; background: #f5f5f5; padding: 10px; text-align: center;">${otp}</h2>
+      <p>This code will expire in 15 minutes.</p>
       <p>If you didn't request this, please ignore this email.</p>
       <p>Best regards,<br>PhysioVerse Team</p>
     `,

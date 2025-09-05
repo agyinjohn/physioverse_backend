@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema(
     fcmToken: {
       type: String,
     },
+    passwordResetOTP: {
+      code: String,
+      expiresAt: Date,
+    },
   },
   {
     timestamps: true,

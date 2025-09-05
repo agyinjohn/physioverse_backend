@@ -129,21 +129,85 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    await sendResetPasswordEmail(email, user.name, resetToken);
+    // Store OTP and set expiry (15 minutes)
+    user.passwordResetOTP = {
+      code: otp,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+    };
+    await user.save();
+
+    await sendResetPasswordEmail(email, user.name, otp);
     resendTimers.set(email, Date.now());
 
     res.json({
       success: true,
-      message: "Password reset email sent",
+      message: "OTP sent to email",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
       message: "Error processing request",
+      error: error.message,
+    });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if OTP exists and is valid
+    if (!user.passwordResetOTP || !user.passwordResetOTP.code) {
+      return res.status(400).json({
+        success: false,
+        message: "No OTP request found",
+      });
+    }
+
+    // Check if OTP has expired
+    if (user.passwordResetOTP.expiresAt < new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired",
+      });
+    }
+
+    // Verify OTP
+    if (user.passwordResetOTP.code !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // Generate reset token
+    const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    // Clear OTP after successful verification
+    user.passwordResetOTP = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      resetToken,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error verifying OTP",
       error: error.message,
     });
   }
