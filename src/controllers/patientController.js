@@ -58,21 +58,23 @@ exports.createPatient = async (req, res) => {
       }
     }
 
+    // Create patient with OPD registration initialized
     const patient = await Patient.create({
       ...req.body,
       patientId,
       assignedTherapist: req.user._id,
       admissionStatus: req.body.admissionStatus || "active",
       profileImage: req.body.profileImage || "/default-avatar.png",
+      opdRegistration: {
+        date: new Date(),
+        status: "pending",
+      },
     });
-    patient.opdRegistration = {
-      date: new Date(),
-      status: "pending",
-    };
+
     res.status(201).json({
       success: true,
       data: patient,
-      message: "Patient created successfully",
+      message: "Patient created successfully and registered for OPD",
     });
   } catch (error) {
     res.status(400).json({
