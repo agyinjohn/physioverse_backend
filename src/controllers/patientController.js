@@ -65,7 +65,10 @@ exports.createPatient = async (req, res) => {
       admissionStatus: req.body.admissionStatus || "active",
       profileImage: req.body.profileImage || "/default-avatar.png",
     });
-
+    patient.opdRegistration = {
+      date: new Date(),
+      status: "pending",
+    };
     res.status(201).json({
       success: true,
       data: patient,
