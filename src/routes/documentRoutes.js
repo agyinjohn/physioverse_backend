@@ -2,10 +2,12 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const documentController = require("../controllers/documentController");
+const patientController = require("../controllers/patientController");
 const authMiddleware = require("../middleware/auth");
+const upload = require("../middleware/upload");
 
 // Multer configuration
-const upload = multer({
+const uploadMulter = multer({
   storage: multer.diskStorage({}),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
@@ -30,10 +32,34 @@ const upload = multer({
 router.use(authMiddleware);
 
 // Document routes
-router.post("/", upload.single("file"), documentController.uploadDocument);
+router.post(
+  "/",
+  upload.single("file"), // Make sure this matches your multer configuration
+  documentController.uploadDocument
+);
 router.get("/", documentController.getDocuments);
 router.get("/:id", documentController.getDocument);
 router.put("/:id", documentController.updateDocument);
 router.delete("/:id", documentController.deleteDocument);
+
+// Patient document routes
+// router.post(
+//   "/:patientId/documents",
+//   authMiddleware,
+//   upload.single("file"),
+//   patientController.uploadDocument
+// );
+
+router.get(
+  "/:patientId/documents",
+  authMiddleware,
+  patientController.getPatientDocuments
+);
+
+router.delete(
+  "/:patientId/documents/:documentId",
+  authMiddleware,
+  patientController.deleteDocument
+);
 
 module.exports = router;

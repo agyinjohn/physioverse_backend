@@ -4,6 +4,13 @@ const cloudinary = require("../utils/cloudinary");
 
 exports.uploadDocument = async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: "No file uploaded",
+      });
+    }
+
     // Check if patient exists
     const patient = await Patient.findById(req.body.patient);
     if (!patient) {
@@ -20,10 +27,13 @@ exports.uploadDocument = async (req, res) => {
     });
 
     const document = await Document.create({
-      ...req.body,
+      patient: patient._id,
+      title: req.body.title,
       fileUrl: result.secure_url,
+      type: req.body.type,
       fileType: req.file.mimetype,
       size: req.file.size,
+      notes: req.body.notes,
       uploadedBy: req.user._id,
     });
 
@@ -32,14 +42,20 @@ exports.uploadDocument = async (req, res) => {
       { path: "uploadedBy", select: "name email" },
     ]);
 
+    // Add document reference to patient
+    await Patient.findByIdAndUpdate(patient._id, {
+      $push: { documents: document._id },
+    });
+
     res.status(201).json({
       success: true,
       data: document,
     });
   } catch (error) {
+    console.error("Upload error:", error);
     res.status(400).json({
       success: false,
-      message: error.message,
+      message: error.message || "Error uploading document",
     });
   }
 };

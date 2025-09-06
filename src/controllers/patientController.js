@@ -424,3 +424,111 @@ exports.registerForOPD = async (req, res) => {
     });
   }
 };
+
+exports.uploadDocument = async (req, res) => {
+  try {
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: `patients/${req.params.patientId}/documents`,
+    });
+
+    const document = {
+      name: req.body.title,
+      url: result.secure_url,
+      type: req.body.type,
+      notes: req.body.notes,
+      uploadedBy: req.user._id,
+      uploadedAt: new Date(),
+    };
+
+    const patient = await Patient.findByIdAndUpdate(
+      req.params.patientId,
+      { $push: { documents: document } },
+      { new: true }
+    ).populate({
+      path: "documents.uploadedBy",
+      select: "name",
+    });
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: patient.documents[patient.documents.length - 1],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message || "Error uploading document",
+    });
+  }
+};
+
+exports.getPatientDocuments = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const patient = await Patient.findById(patientId)
+      .select("documents")
+      .populate({
+        path: "documents.uploadedBy",
+        select: "name",
+      });
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: patient.documents,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.deleteDocument = async (req, res) => {
+  try {
+    const { patientId, documentId } = req.params;
+
+    // Find document to get cloudinary public ID
+    const patient = await Patient.findById(patientId);
+    const document = patient.documents.id(documentId);
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: "Document not found",
+      });
+    }
+
+    // Delete from cloudinary
+    const publicId = document.url.split("/").pop().split(".")[0];
+    await cloudinary.uploader.destroy(publicId);
+
+    // Remove document from patient
+    await Patient.findByIdAndUpdate(patientId, {
+      $pull: { documents: { _id: documentId } },
+    });
+
+    res.json({
+      success: true,
+      message: "Document deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

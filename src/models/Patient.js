@@ -110,6 +110,32 @@ const patientSchema = new mongoose.Schema(
         ref: "Prescription",
       },
     ],
+    documents: [
+      {
+        name: String,
+        url: String,
+        type: {
+          type: String,
+          enum: [
+            "x-ray",
+            "mri",
+            "ct-scan",
+            "prescription",
+            "lab-report",
+            "other",
+          ],
+        },
+        uploadedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        notes: String,
+      },
+    ],
   },
   {
     timestamps: true,
