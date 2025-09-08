@@ -58,7 +58,7 @@ exports.deleteUser = async (req, res) => {
         message: "User not found",
       });
     }
-
+    //here is an update
     // Check if this is the last admin user
     if (user.role.name === "Admin") {
       const adminCount = await User.countDocuments({
