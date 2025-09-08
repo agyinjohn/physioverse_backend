@@ -31,24 +31,18 @@ const uploadMulter = multer({
 // Protect all routes
 router.use(authMiddleware);
 
-// Document routes
+// Patient document routes - move this BEFORE general document routes
 router.post(
-  "/",
-  upload.single("file"), // Make sure this matches your multer configuration
+  "/:patientId",
+  upload.single("file"),
   documentController.uploadDocument
 );
+
+// General document routes
 router.get("/", documentController.getDocuments);
 router.get("/:id", documentController.getDocument);
 router.put("/:id", documentController.updateDocument);
 router.delete("/:id", documentController.deleteDocument);
-
-// Patient document routes
-// router.post(
-//   "/:patientId/documents",
-//   authMiddleware,
-//   upload.single("file"),
-//   patientController.uploadDocument
-// );
 
 router.get(
   "/:patientId/documents",

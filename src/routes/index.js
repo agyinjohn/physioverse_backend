@@ -24,7 +24,6 @@ router.use("/users", userRoutes);
 router.use("/dashboard", authMiddleware, dashboardRoutes);
 router.use("/patients", authMiddleware, patientRoutes);
 router.use("/assessments", authMiddleware, assessmentRoutes);
-router.use("/documents", authMiddleware, documentRoutes);
 router.use("/reviews", authMiddleware, reviewRoutes);
 router.use("/appointments", authMiddleware, appointmentRoutes);
 router.use("/pharmacy", authMiddleware, pharmacyRoutes);
@@ -32,6 +31,7 @@ router.use("/chat", authMiddleware, chatRoutes);
 router.use("/roles", roleRoutes);
 router.use("/bills", authMiddleware, billsRoutes);
 router.use("/auth", authRoutes);
+router.use("/documents", authMiddleware, documentRoutes);
 router.use("/device", authMiddleware, deviceRoutes);
 
 module.exports = router;

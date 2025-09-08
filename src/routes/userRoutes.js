@@ -7,5 +7,7 @@ router.use(authMiddleware);
 
 router.get("/", userController.getAllUsers);
 router.get("/therapists", userController.getTherapists);
+router.delete("/:id", userController.deleteUser);
+router.put("/:id", userController.updateUser);
 
 module.exports = router;
