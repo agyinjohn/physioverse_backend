@@ -94,7 +94,11 @@ exports.getAssessments = async (req, res) => {
     // First find all eligible patients
     const eligiblePatients = await Patient.find({
       $or: [
-        { "opdRegistration.status": { $in: ["vitals_recorded", "completed"] } },
+        {
+          "opdRegistration.status": {
+            $in: ["vitals_recorded", "completed", "pending"],
+          },
+        },
       ],
     }).select("_id");
 
