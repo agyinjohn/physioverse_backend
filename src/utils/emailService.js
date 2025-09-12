@@ -48,7 +48,76 @@ const sendResetPasswordEmail = async (email, name, otp) => {
   return transporter.sendMail(mailOptions);
 };
 
+const sendAppointmentConfirmation = async (
+  recipientEmail,
+  recipientName,
+  appointment
+) => {
+  const formattedDate = new Date(appointment.dateTime).toLocaleString("en-US", {
+    dateStyle: "full",
+    timeStyle: "short",
+  });
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM,
+    to: recipientEmail,
+    subject: "PhysioVerse - Appointment Confirmation",
+    html: `
+      <h1>Appointment Confirmation</h1>
+      <p>Hello ${recipientName},</p>
+      <p>Your appointment has been scheduled successfully:</p>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <p><strong>Date & Time:</strong> ${formattedDate}</p>
+        <p><strong>Type:</strong> ${appointment.type}</p>
+        <p><strong>Patient:</strong> ${appointment.patient.firstName} ${appointment.patient.lastName}</p>
+        <p><strong>Therapist:</strong> ${appointment.therapist.name}</p>
+      </div>
+      <p>If you need to reschedule or cancel, please contact us.</p>
+      <p>Best regards,<br>PhysioVerse Team</p>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
+const sendAppointmentUpdate = async (
+  recipientEmail,
+  recipientName,
+  appointment,
+  updateType
+) => {
+  const formattedDate = new Date(appointment.dateTime).toLocaleString("en-US", {
+    dateStyle: "full",
+    timeStyle: "short",
+  });
+
+  const mailOptions = {
+    from: process.env.SMTP_FROM,
+    to: recipientEmail,
+    subject: `PhysioVerse - Appointment ${updateType}`,
+    html: `
+      <h1>Appointment ${updateType}</h1>
+      <p>Hello ${recipientName},</p>
+      <p>Your appointment has been ${updateType.toLowerCase()}:</p>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+        <p><strong>Date & Time:</strong> ${formattedDate}</p>
+        <p><strong>Type:</strong> ${appointment.type}</p>
+        <p><strong>Patient:</strong> ${appointment.patient.firstName} ${
+      appointment.patient.lastName
+    }</p>
+        <p><strong>Therapist:</strong> ${appointment.therapist.name}</p>
+      </div>
+      <p>If you have any questions, please contact us.</p>
+      <p>Best regards,<br>PhysioVerse Team</p>
+    `,
+  };
+
+  return transporter.sendMail(mailOptions);
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendResetPasswordEmail,
+  sendAppointmentConfirmation,
+  sendAppointmentUpdate,
 };

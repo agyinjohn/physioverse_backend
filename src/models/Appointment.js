@@ -37,6 +37,21 @@ const appointmentSchema = new mongoose.Schema(
       },
       scheduledFor: Date,
     },
+    notifications: {
+      patient: {
+        type: Boolean,
+        default: true,
+      },
+      therapist: {
+        type: Boolean,
+        default: true,
+      },
+      lastSent: Date,
+      reminder: {
+        sent: Boolean,
+        scheduledFor: Date,
+      },
+    },
   },
   {
     timestamps: true,

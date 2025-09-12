@@ -1,5 +1,9 @@
 const Appointment = require("../models/Appointment");
 const Patient = require("../models/Patient");
+const {
+  sendAppointmentConfirmation,
+  sendAppointmentUpdate,
+} = require("../utils/emailService");
 
 exports.createAppointment = async (req, res) => {
   try {
@@ -32,9 +36,31 @@ exports.createAppointment = async (req, res) => {
     });
 
     await appointment.populate([
-      { path: "patient", select: "firstName lastName patientId" },
+      { path: "patient", select: "firstName lastName patientId email" },
       { path: "therapist", select: "name email" },
     ]);
+
+    // Send confirmation emails
+    try {
+      // Send to patient if email exists
+      if (appointment.patient.email) {
+        await sendAppointmentConfirmation(
+          appointment.patient.email,
+          `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+          appointment
+        );
+      }
+
+      // Send to therapist
+      await sendAppointmentConfirmation(
+        appointment.therapist.email,
+        appointment.therapist.name,
+        appointment
+      );
+    } catch (emailError) {
+      console.error("Email notification failed:", emailError);
+      // Continue with the response even if email fails
+    }
 
     res.status(201).json({
       success: true,
@@ -47,73 +73,6 @@ exports.createAppointment = async (req, res) => {
     });
   }
 };
-
-// exports.getAppointments = async (req, res) => {
-//   try {
-//     const {
-//       search,
-//       status,
-//       startDate,
-//       endDate,
-//       therapist,
-//       page = 1,
-//       limit = 10,
-//     } = req.query;
-
-//     const query = {};
-
-//     if (search) {
-//       const patients = await Patient.find({
-//         $or: [
-//           { firstName: { $regex: search, $options: "i" } },
-//           { lastName: { $regex: search, $options: "i" } },
-//           { patientId: { $regex: search, $options: "i" } },
-//         ],
-//       });
-
-//       const patientIds = patients.map((p) => p._id);
-//       query.patient = { $in: patientIds };
-//     }
-
-//     if (status) {
-//       query.status = status;
-//     }
-
-//     if (therapist) {
-//       query.therapist = therapist;
-//     }
-
-//     if (startDate || endDate) {
-//       query.dateTime = {};
-//       if (startDate) query.dateTime.$gte = new Date(startDate);
-//       if (endDate) query.dateTime.$lte = new Date(endDate);
-//     }
-
-//     const appointments = await Appointment.find(query)
-//       .populate("patient", "firstName lastName patientId")
-//       .populate("therapist", "name email")
-//       .skip((page - 1) * limit)
-//       .limit(limit)
-//       .sort({ dateTime: 1 });
-
-//     const total = await Appointment.countDocuments(query);
-
-//     res.json({
-//       success: true,
-//       data: appointments,
-//       pagination: {
-//         total,
-//         page: parseInt(page),
-//         pages: Math.ceil(total / limit),
-//       },
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     });
-//   }
-// };
 
 exports.getAppointments = async (req, res) => {
   try {
@@ -304,15 +263,32 @@ exports.updateStatus = async (req, res) => {
       { status },
       { new: true }
     ).populate([
-      { path: "patient", select: "firstName lastName patientId" },
+      { path: "patient", select: "firstName lastName patientId email" },
       { path: "therapist", select: "name email" },
     ]);
 
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        message: "Appointment not found",
-      });
+    // Send update emails
+    try {
+      // Send to patient if email exists
+      if (appointment.patient.email) {
+        await sendAppointmentUpdate(
+          appointment.patient.email,
+          `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+          appointment,
+          status.charAt(0).toUpperCase() + status.slice(1)
+        );
+      }
+
+      // Send to therapist
+      await sendAppointmentUpdate(
+        appointment.therapist.email,
+        appointment.therapist.name,
+        appointment,
+        status.charAt(0).toUpperCase() + status.slice(1)
+      );
+    } catch (emailError) {
+      console.error("Email notification failed:", emailError);
+      // Continue with the response even if email fails
     }
 
     res.json({

@@ -71,6 +71,18 @@ exports.createPatient = async (req, res) => {
       },
     });
 
+    // Create initial assessment if immediateAssessment is required
+    if (req.body.immediateAssessment?.required) {
+      await Assessment.create({
+        patient: patient._id,
+        patientId: patient.patientId,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        name: req.body.immediateAssessment.issue,
+        status: "pending",
+        responses: {},
+      });
+    }
+
     res.status(201).json({
       success: true,
       data: patient,

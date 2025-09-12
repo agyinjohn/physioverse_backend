@@ -136,6 +136,13 @@ const patientSchema = new mongoose.Schema(
         notes: String,
       },
     ],
+    immediateAssessment: {
+      required: {
+        type: Boolean,
+        default: false,
+      },
+      issue: String,
+    },
   },
   {
     timestamps: true,

@@ -19,6 +19,10 @@ const assessmentSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    name: {
+      type: String,
+      required: true,
+    },
     subjective: {
       type: String,
       default: "",

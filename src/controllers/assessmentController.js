@@ -21,6 +21,7 @@ exports.createAssessment = async (req, res) => {
     const assessment = await Assessment.create({
       ...otherData,
       patient,
+      name: otherData.name || "General Assessment", // Default name if none provided
       formTypes: formTypes.map((id) => ({
         id,
         name: getFormName(id), // You'll need to implement this helper function
