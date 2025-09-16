@@ -74,18 +74,18 @@ exports.getAssessments = async (req, res) => {
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 1);
 
-    // First get appointments for the date range
+    // First get appointments with their assessments for the date range
     const appointments = await Appointment.find({
       dateTime: { $gte: startDate, $lt: endDate },
-    }).populate("patient");
+    }).populate("assessment");
 
-    // Get only the patient IDs from appointments
-    const appointmentPatientIds = appointments
-      .filter((apt) => apt.patient)
-      .map((apt) => apt.patient._id.toString());
+    // Extract assessment IDs from appointments
+    const appointmentAssessmentIds = appointments
+      .filter((apt) => apt.assessment)
+      .map((apt) => apt.assessment._id.toString());
 
-    // Add patient filter to query - only show assessments for patients with appointments
-    query.patient = { $in: appointmentPatientIds };
+    // Only get assessments that are linked to today's appointments
+    query._id = { $in: appointmentAssessmentIds };
 
     // Add other filters
     if (search) {
