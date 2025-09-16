@@ -68,36 +68,37 @@ exports.getAssessments = async (req, res) => {
     const { search, status, formType, page = 1, limit = 10, date } = req.query;
     let query = {};
 
-    // Find appointments for the specified date
-    if (date) {
-      const startDate = new Date(date);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(startDate);
-      endDate.setDate(startDate.getDate() + 1);
+    // Get appointments for today or specified date
+    const startDate = date ? new Date(date) : new Date();
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
 
-      // First get appointments for the date
-      const appointments = await Appointment.find({
-        dateTime: { $gte: startDate, $lt: endDate },
-      });
+    // First get appointments for the date range
+    const appointments = await Appointment.find({
+      dateTime: { $gte: startDate, $lt: endDate },
+    }).populate("patient");
 
-      // Get assessment IDs from these appointments
-      const assessmentIds = appointments
-        .filter((apt) => apt.assessment)
-        .map((apt) => apt.assessment);
+    // Get only the patient IDs from appointments
+    const appointmentPatientIds = appointments
+      .filter((apt) => apt.patient)
+      .map((apt) => apt.patient._id.toString());
 
-      // Add assessment IDs to query
-      query._id = { $in: assessmentIds };
-    }
+    // Add patient filter to query - only show assessments for patients with appointments
+    query.patient = { $in: appointmentPatientIds };
 
-    // Add search if provided
+    // Add other filters
     if (search) {
-      query.$or = [
-        { patientName: { $regex: search, $options: "i" } },
-        { patientId: { $regex: search, $options: "i" } },
+      query.$and = [
+        {
+          $or: [
+            { patientName: { $regex: search, $options: "i" } },
+            { patientId: { $regex: search, $options: "i" } },
+          ],
+        },
       ];
     }
 
-    // Add status and formType if provided
     if (status) query.status = status;
     if (formType) query.formType = formType;
 
