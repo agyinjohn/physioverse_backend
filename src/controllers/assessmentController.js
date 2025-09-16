@@ -2,6 +2,7 @@ const Assessment = require("../models/Assessment");
 const Patient = require("../models/Patient");
 const FormType = require("../models/FormType");
 const mongoose = require("mongoose");
+const Appointment = require("../models/Appointment");
 
 // Create new assessment
 exports.createAssessment = async (req, res) => {
@@ -67,56 +68,32 @@ exports.getAssessments = async (req, res) => {
     const { search, status, formType, page = 1, limit = 10, date } = req.query;
     let query = {};
 
-    // Date handling
+    // Find appointments for the specified date
     if (date) {
-      const requestedDate = new Date(date);
-      requestedDate.setHours(0, 0, 0, 0);
-      const nextDate = new Date(requestedDate);
-      nextDate.setDate(requestedDate.getDate() + 1);
+      const startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 1);
 
-      query.createdAt = {
-        $gte: requestedDate,
-        $lt: nextDate,
-      };
-    } else {
-      // Default to today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // First get appointments for the date
+      const appointments = await Appointment.find({
+        dateTime: { $gte: startDate, $lt: endDate },
+      });
 
-      query.createdAt = {
-        $gte: today,
-        $lt: tomorrow,
-      };
+      // Get assessment IDs from these appointments
+      const assessmentIds = appointments
+        .filter((apt) => apt.assessment)
+        .map((apt) => apt.assessment);
+
+      // Add assessment IDs to query
+      query._id = { $in: assessmentIds };
     }
-
-    // First find all eligible patients
-    const eligiblePatients = await Patient.find({
-      $or: [
-        {
-          "opdRegistration.status": {
-            $in: ["vitals_recorded", "completed", "pending"],
-          },
-        },
-      ],
-    }).select("_id");
-
-    // Add patient criteria to query
-    query.$or = [
-      { isInClinic: true },
-      { patient: { $in: eligiblePatients.map((p) => p._id) } },
-    ];
 
     // Add search if provided
     if (search) {
-      query.$and = [
-        {
-          $or: [
-            { patientName: { $regex: search, $options: "i" } },
-            { patientId: { $regex: search, $options: "i" } },
-          ],
-        },
+      query.$or = [
+        { patientName: { $regex: search, $options: "i" } },
+        { patientId: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -124,14 +101,12 @@ exports.getAssessments = async (req, res) => {
     if (status) query.status = status;
     if (formType) query.formType = formType;
 
-    // Execute query with population
     const assessments = await Assessment.find(query)
       .populate({
         path: "patient",
         select: "firstName lastName patientId opdRegistration vitals",
       })
       .populate("therapist", "name email")
-      .populate("formTypes")
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
