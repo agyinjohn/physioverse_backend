@@ -5,7 +5,6 @@ const appointmentSchema = new mongoose.Schema(
     patient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Patient",
-      required: true,
     },
     therapist: {
       type: mongoose.Schema.Types.ObjectId,
@@ -51,6 +50,21 @@ const appointmentSchema = new mongoose.Schema(
         sent: Boolean,
         scheduledFor: Date,
       },
+    },
+    assessment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Assessment",
+    },
+    guestInfo: {
+      firstName: String,
+      lastName: String,
+      phone: String,
+      email: String,
+      issue: String,
+    },
+    isNewPatient: {
+      type: Boolean,
+      default: false,
     },
   },
   {

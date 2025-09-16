@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const patientController = require("../controllers/patientController");
-// const { protect } = require("../middleware/authMiddleware");
 const authMiddleware = require("../middleware/auth");
+
+// Protect all routes
 router.use(authMiddleware);
 
-// Place specific routes before parameter routes
+// Place specific routes first
 router.get("/active", patientController.getActivePatients);
 router.get("/find/:patientId", patientController.getPatientByPatientId);
 
-router.post("/bills/update-status", patientController.updateBillStatus);
-router.post("/:id/opd-register", patientController.registerForOPD);
-router.post("/:id/bills", patientController.createBill);
+// Assessment route - must come before generic :id routes
+router.get("/:id/assessments", patientController.getPatientAssessments);
 
 // Generic CRUD routes with :id parameter
 router
@@ -24,5 +24,9 @@ router
   .get(patientController.getPatient)
   .put(patientController.updatePatient)
   .delete(patientController.deletePatient);
+
+router.post("/bills/update-status", patientController.updateBillStatus);
+router.post("/:id/opd-register", patientController.registerForOPD);
+router.post("/:id/bills", patientController.createBill);
 
 module.exports = router;

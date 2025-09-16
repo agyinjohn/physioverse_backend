@@ -1,5 +1,6 @@
 const Appointment = require("../models/Appointment");
 const Patient = require("../models/Patient");
+const Assessment = require("../models/Assessment");
 const {
   sendAppointmentConfirmation,
   sendAppointmentUpdate,
@@ -14,36 +15,65 @@ exports.createAppointment = async (req, res) => {
       type,
       notes,
       duration = 60,
+      guestInfo,
+      isNewPatient,
+      assessmentId,
+      medicalIssue,
     } = req.body;
 
-    // Verify patient exists
-    const patientExists = await Patient.findById(patient);
-    if (!patientExists) {
-      return res.status(404).json({
-        success: false,
-        message: "Patient not found",
-      });
-    }
-
-    // Create appointment with specified therapist
-    const appointment = await Appointment.create({
-      patient,
+    let appointmentData = {
       therapist,
       dateTime,
       type,
       notes,
       duration,
-    });
+      isNewPatient,
+    };
+
+    // Handle registered vs unregistered patients
+    if (patient) {
+      appointmentData.patient = patient;
+
+      // If assessment ID provided, verify and link it
+      if (assessmentId) {
+        const existingAssessment = await Assessment.findById(assessmentId);
+        if (existingAssessment) {
+          appointmentData.assessment = assessmentId;
+        }
+      }
+      // Create new assessment if medical issue provided
+      else if (medicalIssue) {
+        const patientDoc = await Patient.findById(patient);
+        const assessment = await Assessment.create({
+          patient,
+          name: medicalIssue,
+          patientId: patientDoc.patientId,
+          patientName: `${patientDoc.firstName} ${patientDoc.lastName}`,
+          status: "pending",
+          responses: {},
+        });
+        appointmentData.assessment = assessment._id;
+      }
+    } else {
+      // Handle unregistered patient
+      appointmentData.guestInfo = {
+        ...guestInfo,
+        issue: medicalIssue,
+      };
+    }
+
+    const appointment = await Appointment.create(appointmentData);
 
     await appointment.populate([
       { path: "patient", select: "firstName lastName patientId email" },
       { path: "therapist", select: "name email" },
+      { path: "assessment", select: "name status" },
     ]);
 
     // Send confirmation emails
     try {
       // Send to patient if email exists
-      if (appointment.patient.email) {
+      if (appointment.patient && appointment.patient.email) {
         await sendAppointmentConfirmation(
           appointment.patient.email,
           `${appointment.patient.firstName} ${appointment.patient.lastName}`,
