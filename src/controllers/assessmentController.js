@@ -68,13 +68,13 @@ exports.getAssessments = async (req, res) => {
     const { search, status, formType, page = 1, limit = 10, date } = req.query;
     let query = {};
 
-    // Get appointments for today or specified date
+    // Get start and end of the specified date
     const startDate = date ? new Date(date) : new Date();
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + 1);
 
-    // First get appointments with their assessments for the date range
+    // Get appointments with assessments for the date range
     const appointments = await Appointment.find({
       dateTime: { $gte: startDate, $lt: endDate },
     }).populate("assessment");
@@ -82,10 +82,15 @@ exports.getAssessments = async (req, res) => {
     // Extract assessment IDs from appointments
     const appointmentAssessmentIds = appointments
       .filter((apt) => apt.assessment)
-      .map((apt) => apt.assessment._id.toString());
+      .map((apt) => apt.assessment._id);
 
-    // Only get assessments that are linked to today's appointments
-    query._id = { $in: appointmentAssessmentIds };
+    // Query for assessments either:
+    // 1. Linked to today's appointments OR
+    // 2. Created today
+    query.$or = [
+      { _id: { $in: appointmentAssessmentIds } },
+      { createdAt: { $gte: startDate, $lt: endDate } },
+    ];
 
     // Add other filters
     if (search) {
