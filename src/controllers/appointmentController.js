@@ -17,7 +17,6 @@ exports.createAppointment = async (req, res) => {
       duration = 60,
       guestInfo,
       isNewPatient,
-      assessmentId,
       medicalIssue,
     } = req.body;
 
@@ -33,29 +32,7 @@ exports.createAppointment = async (req, res) => {
     // Handle registered vs unregistered patients
     if (patient) {
       appointmentData.patient = patient;
-
-      // If assessment ID provided, verify and link it
-      if (assessmentId) {
-        const existingAssessment = await Assessment.findById(assessmentId);
-        if (existingAssessment) {
-          appointmentData.assessment = assessmentId;
-        }
-      }
-      // Create new assessment if medical issue provided
-      else if (medicalIssue) {
-        const patientDoc = await Patient.findById(patient);
-        const assessment = await Assessment.create({
-          patient,
-          name: medicalIssue,
-          patientId: patientDoc.patientId,
-          patientName: `${patientDoc.firstName} ${patientDoc.lastName}`,
-          status: "pending",
-          responses: {},
-        });
-        appointmentData.assessment = assessment._id;
-      }
     } else {
-      // Handle unregistered patient
       appointmentData.guestInfo = {
         ...guestInfo,
         issue: medicalIssue,
@@ -67,16 +44,21 @@ exports.createAppointment = async (req, res) => {
     await appointment.populate([
       { path: "patient", select: "firstName lastName patientId email" },
       { path: "therapist", select: "name email" },
-      { path: "assessment", select: "name status" },
     ]);
 
     // Send confirmation emails
     try {
-      // Send to patient if email exists
-      if (appointment.patient && appointment.patient.email) {
+      // Send to patient if email exists (for both registered and guest patients)
+      const patientEmail =
+        appointment.patient?.email || appointment.guestInfo?.email;
+      const patientName = appointment.patient
+        ? `${appointment.patient.firstName} ${appointment.patient.lastName}`
+        : `${appointment.guestInfo.firstName} ${appointment.guestInfo.lastName}`;
+
+      if (patientEmail) {
         await sendAppointmentConfirmation(
-          appointment.patient.email,
-          `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+          patientEmail,
+          patientName,
           appointment
         );
       }
@@ -134,8 +116,9 @@ exports.getAppointments = async (req, res) => {
       query.therapist = therapist;
     }
 
-    // Handle date filtering
+    // Date filtering
     if (date) {
+      // If specific date is provided
       const startOfDay = new Date(date);
       startOfDay.setUTCHours(0, 0, 0, 0);
 
@@ -145,6 +128,18 @@ exports.getAppointments = async (req, res) => {
       query.dateTime = {
         $gte: startOfDay,
         $lte: endOfDay,
+      };
+    } else {
+      // If no date provided, default to today
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      query.dateTime = {
+        $gte: today,
+        $lt: tomorrow,
       };
     }
 
