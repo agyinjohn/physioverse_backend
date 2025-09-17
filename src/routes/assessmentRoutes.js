@@ -14,5 +14,6 @@ router.put("/:id", assessmentController.updateAssessment);
 router.patch("/:id/toggle-status", assessmentController.toggleStatus);
 router.patch("/:id/toggle-clinic", assessmentController.toggleClinicPresence);
 router.delete("/:id", assessmentController.deleteAssessment);
+router.post("/vitals", assessmentController.updateVitals);
 
 module.exports = router;

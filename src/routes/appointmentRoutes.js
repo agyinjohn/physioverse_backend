@@ -13,6 +13,7 @@ router.get("/:id", appointmentController.getAppointment);
 router.put("/:id", appointmentController.updateAppointment);
 router.delete("/:id", appointmentController.deleteAppointment);
 router.patch("/:id/status", appointmentController.updateStatus);
+router.patch("/:id/reschedule", appointmentController.rescheduleAppointment);
 router.get("/patient/:patientId", appointmentController.getPatientAppointments);
 
 module.exports = router;

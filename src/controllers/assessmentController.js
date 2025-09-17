@@ -141,8 +141,11 @@ exports.getAssessments = async (req, res) => {
 exports.getAssessment = async (req, res) => {
   try {
     const assessment = await Assessment.findById(req.params.id)
+      .populate({
+        path: "patient",
+        select: "firstName lastName patientId vitals vitalsHistory",
+      })
       .populate("therapist", "name email")
-      .populate("patient", "firstName lastName patientId vitals")
       .populate("formTypes");
 
     if (!assessment) {
@@ -315,6 +318,39 @@ exports.deleteAssessment = async (req, res) => {
     res.json({
       success: true,
       message: "Assessment deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.updateVitals = async (req, res) => {
+  try {
+    const { patientId, vitals } = req.body;
+
+    const patient = await Patient.findByIdAndUpdate(
+      patientId,
+      {
+        $set: { vitals },
+        $push: {
+          vitalsHistory: {
+            ...vitals,
+            recordedAt: new Date(),
+          },
+        },
+      },
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      data: {
+        vitals: patient.vitals,
+        vitalsHistory: patient.vitalsHistory,
+      },
     });
   } catch (error) {
     res.status(500).json({

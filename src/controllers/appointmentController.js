@@ -332,3 +332,59 @@ exports.updateStatus = async (req, res) => {
     });
   }
 };
+
+exports.rescheduleAppointment = async (req, res) => {
+  try {
+    const { dateTime } = req.body;
+
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      {
+        dateTime,
+        status: "scheduled", // Reset status to scheduled
+      },
+      { new: true }
+    ).populate([
+      { path: "patient", select: "firstName lastName patientId email" },
+      { path: "therapist", select: "name email" },
+    ]);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found",
+      });
+    }
+
+    // Send email notifications about rescheduling
+    try {
+      if (appointment.patient.email) {
+        await sendAppointmentUpdate(
+          appointment.patient.email,
+          `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+          appointment,
+          "Rescheduled"
+        );
+      }
+
+      await sendAppointmentUpdate(
+        appointment.therapist.email,
+        appointment.therapist.name,
+        appointment,
+        "Rescheduled"
+      );
+    } catch (emailError) {
+      console.error("Email notification failed:", emailError);
+    }
+
+    res.json({
+      success: true,
+      data: appointment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
