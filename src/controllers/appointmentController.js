@@ -106,14 +106,7 @@ exports.createAppointment = async (req, res) => {
 
 exports.getAppointments = async (req, res) => {
   try {
-    const {
-      search,
-      status,
-      therapist,
-      date, // New query param: format should be YYYY-MM-DD
-      page = 1,
-      limit = 10,
-    } = req.query;
+    const { search, status, therapist, date, page = 1, limit = 10 } = req.query;
 
     const query = {};
 
@@ -131,27 +124,29 @@ exports.getAppointments = async (req, res) => {
       query.patient = { $in: patientIds };
     }
 
-    // Filter by appointment status
+    // Filter by status if provided
     if (status) {
       query.status = status;
     }
 
-    // Filter by therapist
+    // Filter by therapist if provided
     if (therapist) {
       query.therapist = therapist;
     }
 
-    // Default to today's date if no `date` is provided
-    const targetDate = date ? new Date(date) : new Date();
+    // Handle date filtering
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setUTCHours(0, 0, 0, 0);
 
-    // Start and end of the day
-    const startOfDay = new Date(targetDate);
-    startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setUTCHours(23, 59, 59, 999);
 
-    const endOfDay = new Date(targetDate);
-    endOfDay.setHours(23, 59, 59, 999);
-
-    query.dateTime = { $gte: startOfDay, $lte: endOfDay };
+      query.dateTime = {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      };
+    }
 
     const appointments = await Appointment.find(query)
       .populate("patient", "firstName lastName patientId")
