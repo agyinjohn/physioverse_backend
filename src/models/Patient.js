@@ -143,6 +143,10 @@ const patientSchema = new mongoose.Schema(
       },
       issue: String,
     },
+    assessment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Assessment",
+    },
   },
   {
     timestamps: true,

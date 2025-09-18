@@ -547,16 +547,21 @@ exports.deleteDocument = async (req, res) => {
 
 exports.getPatientAssessments = async (req, res) => {
   try {
-    const assessments = await Assessment.find({
-      patient: req.params.id,
-      status: { $ne: "cancelled" },
-    })
-      .sort({ createdAt: -1 })
-      .select("name status patientId patientName createdAt");
+    const { id } = req.params;
+    const patient = await Patient.findById(id).populate("assessment");
+
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    const assessment = patient.assessment ? [patient.assessment] : [];
 
     res.json({
       success: true,
-      data: assessments,
+      data: assessment,
     });
   } catch (error) {
     res.status(500).json({

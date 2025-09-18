@@ -9,6 +9,17 @@ exports.createAssessment = async (req, res) => {
   try {
     const { patient, formTypes = [], responses = {}, ...otherData } = req.body;
 
+    // Check if patient already has an assessment
+    const existingAssessment = await Patient.findById(patient).select(
+      "assessment"
+    );
+    if (existingAssessment.assessment) {
+      return res.status(400).json({
+        success: false,
+        message: "Patient already has an assessment",
+      });
+    }
+
     // Verify patient exists
     const patientDoc = await Patient.findById(patient);
     if (!patientDoc) {
@@ -38,6 +49,9 @@ exports.createAssessment = async (req, res) => {
       treatmentPlan: otherData.treatmentPlan || "",
       treatment: otherData.treatment || "",
     });
+
+    // Update patient with assessment reference
+    await Patient.findByIdAndUpdate(patient, { assessment: assessment._id });
 
     res.status(201).json({
       success: true,

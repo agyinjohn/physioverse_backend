@@ -34,7 +34,7 @@ router.use(authMiddleware);
 // Patient document routes - move this BEFORE general document routes
 router.post(
   "/:patientId",
-  upload.single("file"),
+  upload.array("files", 10), // Allow up to 10 files
   documentController.uploadDocument
 );
 

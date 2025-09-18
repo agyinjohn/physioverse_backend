@@ -14,68 +14,62 @@ if (!fs.existsSync(uploadsDir)) {
 
 exports.uploadDocument = async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
-        message: "No file uploaded",
+        message: "No files uploaded",
       });
     }
 
     const patientId = req.params.patientId;
-    const filePath = req.file.path;
 
     // Check if patient exists
     const patient = await Patient.findById(patientId);
     if (!patient) {
-      // Only try to delete if file exists
-      if (fs.existsSync(filePath)) {
-        await unlinkFile(filePath);
-      }
       return res.status(404).json({
         success: false,
         message: "Patient not found",
       });
     }
 
-    try {
-      // Upload file to cloudinary
-      const result = await cloudinary.uploader.upload(filePath, {
-        folder: `patients/${patientId}/documents`,
-        resource_type: "auto",
-      });
+    // Upload each file to cloudinary
+    const uploadedFiles = await Promise.all(
+      req.files.map(async (file) => {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: `patients/${patientId}/documents`,
+          resource_type: "auto",
+        });
 
-      // Clean up the local file after successful upload to cloudinary
-      if (fs.existsSync(filePath)) {
-        await unlinkFile(filePath);
-      }
+        // Clean up local file
+        if (fs.existsSync(file.path)) {
+          await unlinkFile(file.path);
+        }
 
-      const document = await Document.create({
-        patient: patientId,
-        name: req.body.title || req.body.name, // Accept either title or name
-        fileUrl: result.secure_url,
-        type: req.body.type,
-        fileType: req.file.mimetype,
-        size: req.file.size,
-        notes: req.body.notes,
-        uploadedBy: req.user._id,
-      });
+        return {
+          url: result.secure_url,
+          filename: file.originalname,
+        };
+      })
+    );
 
-      await document.populate([
-        { path: "patient", select: "firstName lastName patientId" },
-        { path: "uploadedBy", select: "name email" },
-      ]);
+    const document = await Document.create({
+      patient: patientId,
+      name: req.body.name,
+      files: uploadedFiles,
+      type: req.body.type,
+      notes: req.body.notes,
+      uploadedBy: req.user._id,
+    });
 
-      res.status(201).json({
-        success: true,
-        data: document,
-      });
-    } catch (error) {
-      // Clean up uploaded file if cloudinary upload fails
-      if (fs.existsSync(filePath)) {
-        await unlinkFile(filePath);
-      }
-      throw error;
-    }
+    await document.populate([
+      { path: "patient", select: "firstName lastName patientId" },
+      { path: "uploadedBy", select: "name email" },
+    ]);
+
+    res.status(201).json({
+      success: true,
+      data: document,
+    });
   } catch (error) {
     console.error("Upload error:", error);
     res.status(400).json({
