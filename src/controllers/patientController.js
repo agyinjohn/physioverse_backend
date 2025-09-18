@@ -246,6 +246,7 @@ exports.updatePatient = async (req, res) => {
         const patient = await Patient.findById(req.params.id);
 
         await Assessment.create({
+          name: "",
           patient: req.params.id,
           patientId: patient.patientId,
           patientName: `${patient.firstName} ${patient.lastName}`,
