@@ -56,4 +56,6 @@ router.delete(
   patientController.deleteDocument
 );
 
+router.get("/:patientId/documents", documentController.getPatientDocuments);
+
 module.exports = router;

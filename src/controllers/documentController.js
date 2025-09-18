@@ -211,3 +211,21 @@ exports.deleteDocument = async (req, res) => {
     });
   }
 };
+
+exports.getPatientDocuments = async (req, res) => {
+  try {
+    const documents = await Document.find({ patient: req.params.patientId })
+      .populate("uploadedBy", "name email")
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: documents,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
