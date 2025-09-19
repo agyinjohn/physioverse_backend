@@ -44,11 +44,11 @@ router.get("/:id", documentController.getDocument);
 router.put("/:id", documentController.updateDocument);
 router.delete("/:id", documentController.deleteDocument);
 
-router.get(
-  "/:patientId/documents",
-  authMiddleware,
-  patientController.getPatientDocuments
-);
+// router.get(
+//   "/:patientId/documents",
+//   authMiddleware,
+//   patientController.getPatientDocuments
+// );
 
 router.delete(
   "/:patientId/documents/:documentId",
@@ -56,6 +56,10 @@ router.delete(
   patientController.deleteDocument
 );
 
-router.get("/:patientId/documents", documentController.getPatientDocuments);
+router.get(
+  "/:patientId/documents",
+  authMiddleware,
+  documentController.getPatientDocuments
+);
 
 module.exports = router;

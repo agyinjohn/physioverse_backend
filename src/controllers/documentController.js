@@ -213,11 +213,12 @@ exports.deleteDocument = async (req, res) => {
 };
 
 exports.getPatientDocuments = async (req, res) => {
+  console.log(req.params.patientId);
   try {
     const documents = await Document.find({ patient: req.params.patientId })
       .populate("uploadedBy", "name email")
       .sort({ createdAt: -1 });
-
+    console.log(documents);
     res.json({
       success: true,
       data: documents,
