@@ -373,3 +373,26 @@ exports.updateVitals = async (req, res) => {
     });
   }
 };
+
+// Get patient assessments
+exports.getPatientAssessments = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const assessments = await Assessment.find({ patient: patientId })
+      .populate({
+        path: "patient",
+        select: "firstName lastName patientId",
+      })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: assessments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
