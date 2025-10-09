@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Role = require("../models/Role");
 const {
   sendResetPasswordEmail,
   sendWelcomeEmail,
@@ -62,8 +63,11 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    const user = await User.findOne({ email }).populate("role");
+   
+    const user = await User.findOne({ email }).
+      populate("role"); // Populate role details
+    console.log(user);
+    
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -78,7 +82,8 @@ exports.login = async (req, res) => {
         message: "Invalid credentials",
       });
     }
-
+    
+    
     // Update last login
     user.lastLogin = new Date();
     await user.save();
@@ -86,7 +91,9 @@ exports.login = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
-
+  //  const role = await Role.findById("68e783b2dd41a1ab57f93ec4");
+    // user.role = role; // Attach full role details to user object
+    // console.log(role);
     res.json({
       success: true,
       token,
@@ -94,7 +101,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: user.role, // 👈 return the populated role details
         requirePasswordChange: user.requirePasswordChange,
       },
     });
