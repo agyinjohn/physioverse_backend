@@ -142,6 +142,7 @@ exports.getAssessments = async (req, res) => {
         pages: Math.ceil(total / limit),
       },
     });
+    console.log(assessments);
   } catch (error) {
     console.error("Assessment fetch error:", error);
     res.status(500).json({

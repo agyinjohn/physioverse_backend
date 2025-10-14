@@ -32,7 +32,7 @@ exports.register = async (req, res) => {
       password: generatedPassword,
       role: roleId, // Use role ID instead of role name
     });
-
+    console.log(user);
     await user.populate("role"); // Populate role information
     await sendWelcomeEmail(email, name, generatedPassword);
 
