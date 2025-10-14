@@ -11,6 +11,56 @@ const generatePassword = require("../utils/generatePassword");
 const RESEND_COOLDOWN = 60; // seconds
 const resendTimers = new Map();
 
+// exports.register = async (req, res) => {
+//   try {
+//     const { name, email, roleId } = req.body;
+
+//     // Check if user already exists
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "User already exists",
+//       });
+//     }
+
+//     const generatedPassword = generatePassword();
+
+//     const user = await User.create({
+//       name,
+//       email,
+//       password: generatedPassword,
+//       role: roleId, // Use role ID instead of role name
+//     });
+//     console.log(user);
+//     await user.populate("role"); // Populate role information
+//     await sendWelcomeEmail(email, name, generatedPassword);
+
+//     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+//       expiresIn: "1d",
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       token,
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//         role: user.role,
+//       },
+//       message: "User created successfully. Password has been sent to email.",
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: "Error registering user",
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 exports.register = async (req, res) => {
   try {
     const { name, email, roleId } = req.body;
@@ -30,17 +80,28 @@ exports.register = async (req, res) => {
       name,
       email,
       password: generatedPassword,
-      role: roleId, // Use role ID instead of role name
+      role: roleId,
     });
-    console.log(user);
-    await user.populate("role"); // Populate role information
-    await sendWelcomeEmail(email, name, generatedPassword);
+
+    console.log("✅ User created:", user);
+
+    // Populate role (with safety)
+    await user.populate({ path: "role" }).catch(err => {
+      console.error("❌ Role populate error:", err.message);
+    });
+
+    // Temporarily disable email sending if it causes hanging
+    try {
+      await sendWelcomeEmail(email, name, generatedPassword);
+    } catch (err) {
+      console.error("⚠️ Email sending failed:", err.message);
+    }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       token,
       user: {
@@ -51,14 +112,17 @@ exports.register = async (req, res) => {
       },
       message: "User created successfully. Password has been sent to email.",
     });
+
   } catch (error) {
-    res.status(500).json({
+    console.error("❌ Register error:", error);
+    return res.status(500).json({
       success: false,
       message: "Error registering user",
       error: error.message,
     });
   }
 };
+
 
 exports.login = async (req, res) => {
   try {
