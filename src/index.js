@@ -44,6 +44,8 @@ app.use("/api", routes);
 // app.use(errorHandler);
 
 // Database Connection
+console.log("Connecting to MongoDB...");
+console.log("MONGODB_URI:", process.env.MONGODB_URI);
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => console.log("Connected to MongoDB"))
